@@ -9,7 +9,7 @@ class Polyclinic extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'icon', 'description'];
+    protected $fillable = ['name', 'queue_code', 'icon', 'description'];
 
     public function doctors()
     {
