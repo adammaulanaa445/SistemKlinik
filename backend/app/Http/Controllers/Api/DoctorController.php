@@ -6,15 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 
 class DoctorController extends Controller
 {
-    // GET /api/doctors — daftar semua dokter (public)
-    // Bisa difilter berdasarkan poli: /api/doctors?polyclinic_id=1
     public function index(Request $request)
     {
         $query = Doctor::with(['user', 'polyclinic']);
@@ -30,7 +27,6 @@ class DoctorController extends Controller
         ]);
     }
 
-    // GET /api/doctors/{id} — detail 1 dokter beserta jadwalnya (public)
     public function show($id)
     {
         $doctor = Doctor::with(['user', 'polyclinic', 'schedules'])->find($id);
@@ -46,7 +42,6 @@ class DoctorController extends Controller
         ]);
     }
 
-        // POST /api/doctors — tambah dokter + akun login (admin)
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -70,7 +65,7 @@ class DoctorController extends Controller
             $user = User::create([
                 'name'     => $request->name,
                 'email'    => $request->email,
-                'password' => Hash::make($request->password),
+                'password' => $request->password,
                 'role'     => 'dokter',
             ]);
 
@@ -89,7 +84,6 @@ class DoctorController extends Controller
         ], 201);
     }
 
-    // PUT /api/doctors/{id} — ubah dokter (admin)
     public function update(Request $request, $id)
     {
         $doctor = Doctor::with('user')->find($id);
@@ -127,7 +121,7 @@ class DoctorController extends Controller
             $userData = array_intersect_key($data, array_flip(['name', 'email']));
 
             if (! empty($data['password'])) {
-                $userData['password'] = Hash::make($data['password']);
+                $userData['password'] = $data['password'];
             }
 
             if (! empty($userData)) {
@@ -143,7 +137,6 @@ class DoctorController extends Controller
                 $doctor->update($doctorData);
             }
 
-            // Kalau dokter pindah poli, jadwalnya ikut pindah
             if (isset($data['polyclinic_id'])) {
                 $doctor->schedules()->update(['polyclinic_id' => $data['polyclinic_id']]);
             }
@@ -155,7 +148,6 @@ class DoctorController extends Controller
         ]);
     }
 
-    // DELETE /api/doctors/{id} — hapus dokter + akunnya (admin)
     public function destroy($id)
     {
         $doctor = Doctor::with('user')->find($id);
@@ -172,7 +164,6 @@ class DoctorController extends Controller
 
         DB::transaction(function () use ($doctor) {
             $user = $doctor->user;
-
             $doctor->schedules()->delete();
             $doctor->delete();
             $user->delete();

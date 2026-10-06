@@ -7,48 +7,40 @@ use App\Models\Polyclinic;
 use App\Models\User;
 use App\Models\Patient;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Admin
         User::create([
             'name'     => 'Admin SistemKlinik',
             'email'    => 'admin@klinik.test',
-            'password' => Hash::make('password123'),
+            'password' => 'password123',
             'role'     => 'admin',
         ]);
-
-        // Petugas
         User::create([
             'name'     => 'Siti Petugas',
             'email'    => 'petugas@klinik.test',
-            'password' => Hash::make('password123'),
+            'password' => 'password123',
             'role'     => 'petugas',
         ]);
-
-        // Farmasi
         User::create([
             'name'     => 'Farid Farmasi',
             'email'    => 'farmasi@klinik.test',
-            'password' => Hash::make('password123'),
+            'password' => 'password123',
             'role'     => 'farmasi',
         ]);
 
-        // Poli contoh
         $poliUmum = Polyclinic::create([
             'name'        => 'Poli Umum',
             'queue_code'  => 'A',
             'description' => 'Pelayanan kesehatan umum',
         ]);
 
-        // Dokter (user + data dokter)
         $dokterUser = User::create([
             'name'     => 'dr. Ahmad Maulana',
             'email'    => 'dokter@klinik.test',
-            'password' => Hash::make('password123'),
+            'password' => 'password123',
             'role'     => 'dokter',
         ]);
 
@@ -60,11 +52,10 @@ class UserSeeder extends Seeder
             'phone'          => '081234567891',
         ]);
 
-        // Pasien
         $pasienUser = User::create([
             'name'     => 'Budi Santoso',
             'email'    => 'budi@example.com',
-            'password' => Hash::make('password123'),
+            'password' => 'password123',
             'role'     => 'pasien',
         ]);
 

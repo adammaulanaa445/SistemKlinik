@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
+use App\Models\DoctorSchedule;
 use App\Models\Queue;
 use App\Models\Visit;
 use Illuminate\Http\Request;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\Validator;
 
 class VisitController extends Controller
 {
-    // POST /api/visits — pasien mendaftar kunjungan
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -38,7 +38,15 @@ class VisitController extends Controller
 
         $doctor = Doctor::with('polyclinic')->findOrFail($request->doctor_id);
 
-        // Gunakan transaction supaya pembuatan visit + queue konsisten (atomic)
+        if ($request->filled('doctor_schedule_id')) {
+            $schedule = DoctorSchedule::find($request->doctor_schedule_id);
+            if (! $schedule || $schedule->doctor_id !== $doctor->id) {
+                return response()->json([
+                    'message' => 'Jadwal tidak sesuai dengan dokter yang dipilih',
+                ], 422);
+            }
+        }
+
         $result = DB::transaction(function () use ($request, $patient, $doctor) {
             $visit = Visit::create([
                 'patient_id'         => $patient->id,
@@ -50,7 +58,7 @@ class VisitController extends Controller
                 'status'             => 'menunggu',
             ]);
 
-            $queueNumber = $this->generateQueueNumber($doctor->polyclinic);
+            $queueNumber = $this->generateQueueNumberLocked($doctor->polyclinic);
 
             $queue = Queue::create([
                 'visit_id'     => $visit->id,
@@ -72,22 +80,17 @@ class VisitController extends Controller
         ], 201);
     }
 
-    // Logic generate nomor antrian: {queue_code}-{nomor urut 3 digit}, reset tiap hari per poli
-    private function generateQueueNumber($polyclinic): string
+    private function generateQueueNumberLocked($polyclinic): string
     {
         $today = now()->toDateString();
-
         $countToday = Queue::whereHas('visit', function ($query) use ($polyclinic, $today) {
             $query->where('polyclinic_id', $polyclinic->id)
                   ->whereDate('visit_date', $today);
-        })->count();
-
+        })->lockForUpdate()->count();
         $nextNumber = $countToday + 1;
-
         return $polyclinic->queue_code . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
-    // GET /api/visits/my — riwayat kunjungan pasien yang sedang login
     public function myVisits(Request $request)
     {
         $patient = $request->user()->patient;
@@ -108,7 +111,6 @@ class VisitController extends Controller
         ]);
     }
 
-    // GET /api/visits/{id}/queue — cek status antrian 1 kunjungan spesifik (untuk halaman "Antrian Saya")
     public function queueStatus(Request $request, $id)
     {
         $patient = $request->user()->patient;

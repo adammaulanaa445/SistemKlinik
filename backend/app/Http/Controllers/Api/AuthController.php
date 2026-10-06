@@ -6,13 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    // Registrasi khusus PASIEN (sesuai halaman "Daftar Akun Pasien")
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -33,23 +32,28 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => 'pasien',
-        ]);
+        $result = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => $request->password,
+                'role'     => 'pasien',
+            ]);
 
-        Patient::create([
-            'user_id'    => $user->id,
-            'nik'        => $request->nik,
-            'gender'     => $request->gender,
-            'birth_date' => $request->birth_date,
-            'phone'      => $request->phone,
-            'address'    => $request->address,
-        ]);
+            Patient::create([
+                'user_id'    => $user->id,
+                'nik'        => $request->nik,
+                'gender'     => $request->gender,
+                'birth_date' => $request->birth_date,
+                'phone'      => $request->phone,
+                'address'    => $request->address,
+            ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('auth_token')->plainTextToken;
+            return [$user, $token];
+        });
+
+        [$user, $token] = $result;
 
         return response()->json([
             'message' => 'Registrasi berhasil',
@@ -58,7 +62,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // Login untuk semua role (pasien, petugas, dokter, farmasi, admin)
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -90,13 +93,11 @@ class AuthController extends Controller
         ]);
     }
 
-    // Ambil data user yang sedang login
     public function me(Request $request)
     {
         return response()->json($request->user());
     }
 
-    // Logout (hapus token yang sedang dipakai)
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

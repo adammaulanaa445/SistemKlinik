@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'consultation_fee' => 50000,
+    'consultation_fee' => (int) env('CLINIC_CONSULTATION_FEE', 50000),
 ];
