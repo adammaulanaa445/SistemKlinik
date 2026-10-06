@@ -25,10 +25,10 @@
 		if (!requireRole('dokter')) return;
 		try {
 			const [q, m] = await Promise.all([
-				api.get('/dashboard/doctor'),
+				api.get('/queues/today'),
 				api.get('/medicines')
 			]);
-			queue = q.data.antrian_terbaru.find((x) => String(x.visit_id) === visitId) ?? null;
+			queue = q.data.find((x) => String(x.visit_id) === visitId) ?? null;
 			medicines = m.data;
 		} finally {
 			loading = false;
@@ -37,12 +37,13 @@
 
 	async function panggil() {
 		working = true;
+		error = '';
 		try {
-			await api.patch(`/queues/${queue.id}/call`, {});
+			if (queue.status === 'menunggu') await api.patch(`/queues/${queue.id}/call`, {});
 			await api.patch(`/queues/${queue.id}/start`, {});
 			queue = { ...queue, status: 'diproses' };
 		} catch (err) {
-			error = err.message;
+			error = err.message || 'Gagal memanggil pasien';
 		} finally {
 			working = false;
 		}
