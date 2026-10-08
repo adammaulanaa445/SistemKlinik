@@ -2,20 +2,35 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api.js';
+	import { requireRole } from '$lib/auth.svelte.js';
 
 	let polyclinics = $state([]);
 	let doctors = $state([]);
 	let selectedPoli = $state(null);
 	let selectedDoctor = $state(null);
-	let complaint = $state('');
+	let needsProfile = $state(false);
 	let loading = $state(true);
 	let submitting = $state(false);
 	let error = $state('');
+	let errors = $state({});
+
+	let form = $state({
+		complaint: '',
+		nik: '',
+		gender: 'L',
+		birth_date: '',
+		address: ''
+	});
 
 	onMount(async () => {
+		if (!requireRole('pasien')) return;
 		try {
-			const res = await api.get('/polyclinics');
-			polyclinics = res.data;
+			const [poli, me] = await Promise.all([api.get('/polyclinics'), api.get('/me')]);
+			polyclinics = poli.data;
+
+			// "Cek data pasien": kalau belum lengkap, form meminta data diri (sekali saja)
+			const p = me.patient;
+			needsProfile = !p || !p.nik || !p.gender || !p.birth_date || !p.address;
 		} finally {
 			loading = false;
 		}
@@ -31,16 +46,24 @@
 	async function daftar(e) {
 		e.preventDefault();
 		error = '';
+		errors = {};
 		submitting = true;
 
+		const payload = { doctor_id: selectedDoctor.id, complaint: form.complaint };
+
+		if (needsProfile) {
+			payload.nik = form.nik;
+			payload.gender = form.gender;
+			payload.birth_date = form.birth_date;
+			payload.address = form.address;
+		}
+
 		try {
-			const res = await api.post('/visits', {
-				doctor_id: selectedDoctor.id,
-				complaint
-			});
+			const res = await api.post('/visits', payload);
 			goto(`/app/antrian/${res.data.visit.id}`);
 		} catch (err) {
-			error = err.message || 'Gagal mendaftar kunjungan';
+			errors = err.errors ?? {};
+			error = err.errors ? '' : err.message || 'Gagal mendaftar kunjungan';
 		} finally {
 			submitting = false;
 		}
@@ -90,16 +113,50 @@
 		<p class="text-sm text-gray-500">Dokter: <span class="font-medium text-gray-800">{selectedDoctor.user.name}</span></p>
 
 		<form onsubmit={daftar} class="mt-4 space-y-3">
+			{#if needsProfile}
+				<div class="rounded-lg bg-teal-50 p-3 text-sm text-teal-800">
+					Lengkapi data diri Anda. Cukup diisi sekali, kunjungan berikutnya tidak perlu lagi.
+				</div>
+
+				<div>
+					<label class="mb-1 block text-sm" for="nik">NIK</label>
+					<input id="nik" bind:value={form.nik} maxlength="16" required class="w-full rounded-lg border px-3 py-2" />
+					{#if errors.nik}<p class="mt-1 text-xs text-red-600">{errors.nik[0]}</p>{/if}
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label class="mb-1 block text-sm" for="gender">Jenis Kelamin</label>
+						<select id="gender" bind:value={form.gender} class="w-full rounded-lg border px-3 py-2">
+							<option value="L">Laki-laki</option>
+							<option value="P">Perempuan</option>
+						</select>
+					</div>
+					<div>
+						<label class="mb-1 block text-sm" for="birth_date">Tanggal Lahir</label>
+						<input id="birth_date" type="date" bind:value={form.birth_date} required class="w-full rounded-lg border px-3 py-2" />
+						{#if errors.birth_date}<p class="mt-1 text-xs text-red-600">{errors.birth_date[0]}</p>{/if}
+					</div>
+				</div>
+
+				<div>
+					<label class="mb-1 block text-sm" for="address">Alamat</label>
+					<textarea id="address" bind:value={form.address} required rows="2" class="w-full rounded-lg border px-3 py-2"></textarea>
+					{#if errors.address}<p class="mt-1 text-xs text-red-600">{errors.address[0]}</p>{/if}
+				</div>
+			{/if}
+
 			<div>
 				<label class="mb-1 block text-sm" for="complaint">Keluhan</label>
 				<textarea
 					id="complaint"
-					bind:value={complaint}
+					bind:value={form.complaint}
 					required
 					rows="3"
 					class="w-full rounded-lg border px-3 py-2"
 					placeholder="Jelaskan keluhan Anda..."
 				></textarea>
+				{#if errors.complaint}<p class="mt-1 text-xs text-red-600">{errors.complaint[0]}</p>{/if}
 			</div>
 
 			{#if error}<p class="text-sm text-red-600">{error}</p>{/if}

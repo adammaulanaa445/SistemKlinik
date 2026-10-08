@@ -9,6 +9,7 @@ use App\Models\Visit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\BillingService;
 
 class MedicalRecordController extends Controller
 {
@@ -57,6 +58,11 @@ class MedicalRecordController extends Controller
                 $visit->queue->update(['status' => 'selesai']);
             }
             $visit->update(['status' => 'selesai']);
+
+            if (empty($request->prescription_items)) {
+                app(BillingService::class)->createForVisit($visit);
+            }
+            
             return $record;
         });
         return response()->json(['message' => 'Rekam medis berhasil disimpan','data' => $record->load('prescription.items.medicine')], 201);

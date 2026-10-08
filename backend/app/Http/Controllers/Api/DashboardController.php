@@ -35,9 +35,9 @@ class DashboardController extends Controller
                 'selesai'           => (clone $visitsToday)->where('status', 'selesai')->count(),
                 'antrian_terbaru'   => Queue::with(['visit.patient.user'])
                     ->whereHas('visit', fn ($q) => $q->where('doctor_id', $doctor->id)->whereDate('visit_date', $today))
-                    ->where('status', 'menunggu')
+                    ->whereIn('status', ['menunggu', 'dipanggil', 'diproses'])
                     ->orderBy('id')
-                    ->limit(5)
+                    ->limit(20)
                     ->get(),
             ],
         ]);

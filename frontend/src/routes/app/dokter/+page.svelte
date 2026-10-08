@@ -6,6 +6,12 @@
 	let summary = $state(null);
 	let loading = $state(true);
 
+	const statusLabel = {
+		menunggu: 'Menunggu',
+		dipanggil: 'Dipanggil',
+		diproses: 'Diperiksa'
+	};
+
 	onMount(async () => {
 		if (!requireRole('dokter')) return;
 		try {
@@ -49,12 +55,17 @@
 						<p class="font-medium text-gray-800">{q.queue_number}</p>
 						<p class="text-xs text-gray-500">{q.visit.patient.user.name}</p>
 					</div>
-					<a
-						href="/app/pemeriksaan/{q.visit_id}"
-						class="rounded-lg bg-teal-600 px-3 py-1.5 text-sm text-white hover:bg-teal-700"
-					>
-						Lihat Detail
-					</a>
+					<div class="flex items-center gap-3">
+						<span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+							{statusLabel[q.status]}
+						</span>
+						<a
+							href="/app/pemeriksaan/{q.visit_id}"
+							class="rounded-lg bg-teal-600 px-3 py-1.5 text-sm text-white hover:bg-teal-700"
+						>
+							Lihat Detail
+						</a>
+					</div>
 				</div>
 			{/each}
 		</div>

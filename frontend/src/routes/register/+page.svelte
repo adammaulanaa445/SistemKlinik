@@ -6,13 +6,9 @@
 	let form = $state({
 		name: '',
 		email: '',
-		password: '',
-		password_confirmation: '',
-		nik: '',
-		gender: 'L',
-		birth_date: '',
 		phone: '',
-		address: ''
+		password: '',
+		password_confirmation: ''
 	});
 
 	let errors = $state({});
@@ -28,20 +24,16 @@
 			auth.set(res.user, res.token);
 			goto('/app/kunjungan');
 		} catch (err) {
-			if (err.errors) {
-				errors = err.errors;
-			} else {
-				errors = { general: [err.message || 'Registrasi gagal'] };
-			}
+			errors = err.errors ?? { general: [err.message || 'Registrasi gagal'] };
 		} finally {
 			loading = false;
 		}
 	}
 </script>
 
-<div class="mx-auto my-10 max-w-lg rounded-xl border bg-white p-6 shadow-sm">
+<div class="mx-auto my-10 max-w-md rounded-xl border bg-white p-6 shadow-sm">
 	<h1 class="mb-1 text-xl font-semibold">Daftar Akun Pasien</h1>
-	<p class="mb-5 text-sm text-gray-500">Lengkapi data diri Anda untuk mulai menggunakan layanan.</p>
+	<p class="mb-5 text-sm text-gray-500">Data diri lengkap diisi sekali saat pendaftaran kunjungan pertama.</p>
 
 	<form onsubmit={handleRegister} class="space-y-4">
 		<div>
@@ -50,61 +42,30 @@
 			{#if errors.name}<p class="mt-1 text-xs text-red-600">{errors.name[0]}</p>{/if}
 		</div>
 
-		<div class="grid grid-cols-2 gap-3">
-			<div>
-				<label class="mb-1 block text-sm" for="email">Email</label>
-				<input id="email" type="email" bind:value={form.email} required class="w-full rounded-lg border px-3 py-2" />
-				{#if errors.email}<p class="mt-1 text-xs text-red-600">{errors.email[0]}</p>{/if}
-			</div>
-			<div>
-				<label class="mb-1 block text-sm" for="phone">No. HP</label>
-				<input id="phone" bind:value={form.phone} required class="w-full rounded-lg border px-3 py-2" />
-				{#if errors.phone}<p class="mt-1 text-xs text-red-600">{errors.phone[0]}</p>{/if}
-			</div>
-		</div>
-
-		<div class="grid grid-cols-2 gap-3">
-			<div>
-				<label class="mb-1 block text-sm" for="password">Password</label>
-				<input id="password" type="password" bind:value={form.password} required class="w-full rounded-lg border px-3 py-2" />
-				{#if errors.password}<p class="mt-1 text-xs text-red-600">{errors.password[0]}</p>{/if}
-			</div>
-			<div>
-				<label class="mb-1 block text-sm" for="password_confirmation">Konfirmasi Password</label>
-				<input id="password_confirmation" type="password" bind:value={form.password_confirmation} required class="w-full rounded-lg border px-3 py-2" />
-			</div>
-		</div>
-
-		<div class="grid grid-cols-2 gap-3">
-			<div>
-				<label class="mb-1 block text-sm" for="nik">NIK</label>
-				<input id="nik" bind:value={form.nik} maxlength="16" required class="w-full rounded-lg border px-3 py-2" />
-				{#if errors.nik}<p class="mt-1 text-xs text-red-600">{errors.nik[0]}</p>{/if}
-			</div>
-			<div>
-				<label class="mb-1 block text-sm" for="gender">Jenis Kelamin</label>
-				<select id="gender" bind:value={form.gender} class="w-full rounded-lg border px-3 py-2">
-					<option value="L">Laki-laki</option>
-					<option value="P">Perempuan</option>
-				</select>
-			</div>
+		<div>
+			<label class="mb-1 block text-sm" for="email">Email</label>
+			<input id="email" type="email" bind:value={form.email} required class="w-full rounded-lg border px-3 py-2" />
+			{#if errors.email}<p class="mt-1 text-xs text-red-600">{errors.email[0]}</p>{/if}
 		</div>
 
 		<div>
-			<label class="mb-1 block text-sm" for="birth_date">Tanggal Lahir</label>
-			<input id="birth_date" type="date" bind:value={form.birth_date} required class="w-full rounded-lg border px-3 py-2" />
-			{#if errors.birth_date}<p class="mt-1 text-xs text-red-600">{errors.birth_date[0]}</p>{/if}
+			<label class="mb-1 block text-sm" for="phone">No. HP</label>
+			<input id="phone" bind:value={form.phone} required class="w-full rounded-lg border px-3 py-2" />
+			{#if errors.phone}<p class="mt-1 text-xs text-red-600">{errors.phone[0]}</p>{/if}
 		</div>
 
 		<div>
-			<label class="mb-1 block text-sm" for="address">Alamat</label>
-			<textarea id="address" bind:value={form.address} required rows="2" class="w-full rounded-lg border px-3 py-2"></textarea>
-			{#if errors.address}<p class="mt-1 text-xs text-red-600">{errors.address[0]}</p>{/if}
+			<label class="mb-1 block text-sm" for="password">Password</label>
+			<input id="password" type="password" bind:value={form.password} required class="w-full rounded-lg border px-3 py-2" />
+			{#if errors.password}<p class="mt-1 text-xs text-red-600">{errors.password[0]}</p>{/if}
 		</div>
 
-		{#if errors.general}
-			<p class="text-sm text-red-600">{errors.general[0]}</p>
-		{/if}
+		<div>
+			<label class="mb-1 block text-sm" for="password_confirmation">Konfirmasi Password</label>
+			<input id="password_confirmation" type="password" bind:value={form.password_confirmation} required class="w-full rounded-lg border px-3 py-2" />
+		</div>
+
+		{#if errors.general}<p class="text-sm text-red-600">{errors.general[0]}</p>{/if}
 
 		<button
 			type="submit"

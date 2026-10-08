@@ -2,10 +2,16 @@
 	import './layout.css';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/auth.svelte.js';
+	import { api } from '$lib/api.js';
 
 	let { children } = $props();
 
-	function handleLogout() {
+	async function handleLogout() {
+		try {
+			await api.post('/logout', {});
+		} catch (e) {
+			// token mungkin sudah tidak berlaku, tetap lanjut logout di browser
+		}
 		auth.clear();
 		goto('/login');
 	}

@@ -138,7 +138,7 @@ class PrescriptionController extends Controller
     // PATCH /api/prescriptions/{id}/complete — obat diserahkan ke pasien
     public function complete($id)
     {
-        $prescription = Prescription::find($id);
+        $prescription = Prescription::with('medicalRecord.visit')->find($id);
 
         if (! $prescription) {
             return response()->json(['message' => 'Resep tidak ditemukan'], 404);
@@ -151,6 +151,8 @@ class PrescriptionController extends Controller
         }
 
         $prescription->update(['status' => 'selesai']);
+
+        app(\App\Services\BillingService::class)->createForVisit($prescription->medicalRecord->visit);
 
         return response()->json([
             'message' => 'Obat sudah diserahkan, resep selesai',

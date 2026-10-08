@@ -11,7 +11,10 @@
 	let error = $state('');
 
 	const statusLabel = {
-		menunggu: 'Menunggu', dipanggil: 'Dipanggil', diproses: 'Diproses', selesai: 'Selesai'
+		menunggu: 'Menunggu',
+		dipanggil: 'Dipanggil',
+		diproses: 'Diperiksa',
+		selesai: 'Selesai'
 	};
 
 	onMount(async () => {
@@ -29,24 +32,27 @@
 		payments = p.data;
 	}
 
-	async function buatTagihan(visitId) {
+	async function panggil(queueId) {
 		error = '';
-		working = visitId;
+		working = 'q' + queueId;
 		try {
-			await api.post('/payments', { visit_id: visitId });
+			await api.patch(`/queues/${queueId}/call`, {});
 			await loadAll();
 		} catch (err) {
-			error = err.message || 'Gagal membuat tagihan';
+			error = err.message || 'Gagal memanggil pasien';
 		} finally {
 			working = null;
 		}
 	}
 
 	async function bayar(paymentId, method) {
-		working = paymentId;
+		error = '';
+		working = 'p' + paymentId;
 		try {
 			await api.patch(`/payments/${paymentId}/pay`, { method });
 			await loadAll();
+		} catch (err) {
+			error = err.message || 'Gagal mencatat pembayaran';
 		} finally {
 			working = null;
 		}
@@ -54,24 +60,27 @@
 </script>
 
 <h1 class="mb-1 text-xl font-bold text-gray-800">Selamat datang, {auth.user?.name}</h1>
-<p class="mb-6 text-sm text-gray-500">Pantau antrian dan kelola pembayaran pasien.</p>
+<p class="mb-6 text-sm text-gray-500">Pantau antrian, panggil pasien, dan kelola pembayaran.</p>
 
 {#if loading}
 	<p class="text-sm text-gray-500">Memuat...</p>
 {:else}
-	<div class="flex gap-2 border-b">
-		<button
-			onclick={() => (activeTab = 'antrian')}
-			class="px-4 py-2 text-sm {activeTab === 'antrian' ? 'border-b-2 border-teal-600 font-medium text-teal-700' : 'text-gray-500'}"
-		>
-			Antrian Hari Ini
-		</button>
-		<button
-			onclick={() => (activeTab = 'pembayaran')}
-			class="px-4 py-2 text-sm {activeTab === 'pembayaran' ? 'border-b-2 border-teal-600 font-medium text-teal-700' : 'text-gray-500'}"
-		>
-			Pembayaran Belum Lunas
-		</button>
+	<div class="flex items-center justify-between border-b">
+		<div class="flex gap-2">
+			<button
+				onclick={() => (activeTab = 'antrian')}
+				class="px-4 py-2 text-sm {activeTab === 'antrian' ? 'border-b-2 border-teal-600 font-medium text-teal-700' : 'text-gray-500'}"
+			>
+				Antrian Hari Ini
+			</button>
+			<button
+				onclick={() => (activeTab = 'pembayaran')}
+				class="px-4 py-2 text-sm {activeTab === 'pembayaran' ? 'border-b-2 border-teal-600 font-medium text-teal-700' : 'text-gray-500'}"
+			>
+				Pembayaran Belum Lunas
+			</button>
+		</div>
+		<button onclick={loadAll} class="text-sm text-teal-700 hover:underline">Muat ulang</button>
 	</div>
 
 	{#if error}<p class="mt-3 text-sm text-red-600">{error}</p>{/if}
@@ -93,13 +102,13 @@
 						<span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
 							{statusLabel[q.status]}
 						</span>
-						{#if q.status === 'selesai'}
+						{#if q.status === 'menunggu'}
 							<button
-								onclick={() => buatTagihan(q.visit_id)}
-								disabled={working === q.visit_id}
+								onclick={() => panggil(q.id)}
+								disabled={working === 'q' + q.id}
 								class="rounded-lg bg-teal-600 px-3 py-1.5 text-sm text-white hover:bg-teal-700 disabled:opacity-50"
 							>
-								Buat Tagihan
+								Panggil
 							</button>
 						{/if}
 					</div>
@@ -126,7 +135,7 @@
 						{#each ['tunai', 'transfer', 'qris'] as method}
 							<button
 								onclick={() => bayar(pay.id, method)}
-								disabled={working === pay.id}
+								disabled={working === 'p' + pay.id}
 								class="rounded-lg border px-3 py-1.5 text-sm capitalize hover:bg-gray-50 disabled:opacity-50"
 							>
 								Bayar {method}

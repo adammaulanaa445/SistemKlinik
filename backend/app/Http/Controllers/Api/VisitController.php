@@ -4,30 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
-use App\Models\DoctorSchedule;
 use App\Models\Queue;
 use App\Models\Visit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class VisitController extends Controller
 {
+    // POST /api/visits — pasien mendaftar kunjungan
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'doctor_id'          => 'required|exists:doctors,id',
-            'doctor_schedule_id' => 'nullable|exists:doctor_schedules,id',
-            'complaint'          => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validasi gagal',
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
-
         $patient = $request->user()->patient;
 
         if (! $patient) {
@@ -36,18 +24,40 @@ class VisitController extends Controller
             ], 403);
         }
 
-        $doctor = Doctor::with('polyclinic')->findOrFail($request->doctor_id);
+        // "Cek data pasien": kalau belum lengkap, wajib diisi sekarang lalu disimpan (input sekali)
+        $needsProfile = $this->profileIncomplete($patient);
 
-        if ($request->filled('doctor_schedule_id')) {
-            $schedule = DoctorSchedule::find($request->doctor_schedule_id);
-            if (! $schedule || $schedule->doctor_id !== $doctor->id) {
-                return response()->json([
-                    'message' => 'Jadwal tidak sesuai dengan dokter yang dipilih',
-                ], 422);
-            }
+        $rules = [
+            'doctor_id'          => 'required|exists:doctors,id',
+            'doctor_schedule_id' => 'nullable|exists:doctor_schedules,id',
+            'complaint'          => 'required|string',
+        ];
+
+        if ($needsProfile) {
+            $rules += [
+                'nik'        => ['required', 'string', 'size:16', Rule::unique('patients', 'nik')->ignore($patient->id)],
+                'gender'     => 'required|in:L,P',
+                'birth_date' => 'required|date|before:today',
+                'address'    => 'required|string',
+            ];
         }
 
-        $result = DB::transaction(function () use ($request, $patient, $doctor) {
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $doctor = Doctor::with('polyclinic')->findOrFail($request->doctor_id);
+
+        $result = DB::transaction(function () use ($request, $patient, $doctor, $needsProfile) {
+            if ($needsProfile) {
+                $patient->update($request->only(['nik', 'gender', 'birth_date', 'address']));
+            }
+
             $visit = Visit::create([
                 'patient_id'         => $patient->id,
                 'doctor_id'          => $doctor->id,
@@ -58,11 +68,9 @@ class VisitController extends Controller
                 'status'             => 'menunggu',
             ]);
 
-            $queueNumber = $this->generateQueueNumberLocked($doctor->polyclinic);
-
             $queue = Queue::create([
                 'visit_id'     => $visit->id,
-                'queue_number' => $queueNumber,
+                'queue_number' => $this->generateQueueNumber($doctor->polyclinic),
                 'status'       => 'menunggu',
             ]);
 
@@ -80,17 +88,28 @@ class VisitController extends Controller
         ], 201);
     }
 
-    private function generateQueueNumberLocked($polyclinic): string
+    private function profileIncomplete($patient): bool
+    {
+        return empty($patient->nik)
+            || empty($patient->gender)
+            || empty($patient->birth_date)
+            || empty($patient->address);
+    }
+
+    // Format nomor antrian: {queue_code}-{urut 3 digit}, reset tiap hari per poli
+    private function generateQueueNumber($polyclinic): string
     {
         $today = now()->toDateString();
+
         $countToday = Queue::whereHas('visit', function ($query) use ($polyclinic, $today) {
             $query->where('polyclinic_id', $polyclinic->id)
                   ->whereDate('visit_date', $today);
-        })->lockForUpdate()->count();
-        $nextNumber = $countToday + 1;
-        return $polyclinic->queue_code . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        })->count();
+
+        return $polyclinic->queue_code . '-' . str_pad($countToday + 1, 3, '0', STR_PAD_LEFT);
     }
 
+    // GET /api/visits/my — riwayat kunjungan pasien yang sedang login
     public function myVisits(Request $request)
     {
         $patient = $request->user()->patient;
@@ -106,11 +125,10 @@ class VisitController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return response()->json([
-            'data' => $visits,
-        ]);
+        return response()->json(['data' => $visits]);
     }
 
+    // GET /api/visits/{id}/queue — status antrian 1 kunjungan (halaman "Antrian Saya")
     public function queueStatus(Request $request, $id)
     {
         $patient = $request->user()->patient;
@@ -125,8 +143,6 @@ class VisitController extends Controller
             ], 404);
         }
 
-        return response()->json([
-            'data' => $visit,
-        ]);
+        return response()->json(['data' => $visit]);
     }
 }

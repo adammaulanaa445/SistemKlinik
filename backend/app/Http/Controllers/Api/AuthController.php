@@ -15,14 +15,10 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email',
-            'password'    => 'required|string|min:8|confirmed',
-            'nik'         => 'required|string|size:16|unique:patients,nik',
-            'gender'      => 'required|in:L,P',
-            'birth_date'  => 'required|date',
-            'phone'       => 'required|string|max:20',
-            'address'     => 'required|string',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'phone'    => 'required|string|max:20',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -36,18 +32,15 @@ class AuthController extends Controller
             $user = User::create([
                 'name'     => $request->name,
                 'email'    => $request->email,
-                'password' => $request->password,
+                'password' => Hash::make($request->password),
                 'role'     => 'pasien',
             ]);
 
             Patient::create([
-                'user_id'    => $user->id,
-                'nik'        => $request->nik,
-                'gender'     => $request->gender,
-                'birth_date' => $request->birth_date,
-                'phone'      => $request->phone,
-                'address'    => $request->address,
+            'user_id' => $user->id,
+            'phone'   => $request->phone,
             ]);
+
 
             $token = $user->createToken('auth_token')->plainTextToken;
             return [$user, $token];
@@ -95,7 +88,7 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json($request->user()->load('patient'));
     }
 
     public function logout(Request $request)

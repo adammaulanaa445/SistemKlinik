@@ -8,6 +8,7 @@
 	const visitId = page.params.visitId;
 
 	let queue = $state(null);
+	let history = $state([]);
 	let medicines = $state([]);
 	let loading = $state(true);
 	let error = $state('');
@@ -24,26 +25,33 @@
 	onMount(async () => {
 		if (!requireRole('dokter')) return;
 		try {
-			const [q, m] = await Promise.all([
-				api.get('/queues/today'),
-				api.get('/medicines')
-			]);
-			queue = q.data.find((x) => String(x.visit_id) === visitId) ?? null;
-			medicines = m.data;
+			await loadQueue();
+			if (queue) {
+				const [h, m] = await Promise.all([
+					api.get(`/patients/${queue.visit.patient_id}/medical-records`),
+					api.get('/medicines')
+				]);
+				history = h.data;
+				medicines = m.data;
+			}
 		} finally {
 			loading = false;
 		}
 	});
 
-	async function panggil() {
-		working = true;
+	async function loadQueue() {
+		const res = await api.get('/queues/today');
+		queue = res.data.find((q) => String(q.visit_id) === String(visitId)) ?? null;
+	}
+
+	async function mulaiPeriksa() {
 		error = '';
+		working = true;
 		try {
-			if (queue.status === 'menunggu') await api.patch(`/queues/${queue.id}/call`, {});
 			await api.patch(`/queues/${queue.id}/start`, {});
-			queue = { ...queue, status: 'diproses' };
+			await loadQueue();
 		} catch (err) {
-			error = err.message || 'Gagal memanggil pasien';
+			error = err.message || 'Gagal memulai pemeriksaan';
 		} finally {
 			working = false;
 		}
@@ -84,21 +92,56 @@
 {:else if !queue}
 	<p class="text-sm text-gray-500">Antrian tidak ditemukan atau bukan milik Anda.</p>
 {:else}
-	<div class="max-w-2xl rounded-xl border bg-white p-5 shadow-sm">
-		<p class="text-sm text-gray-500">
-			{queue.queue_number} &middot; {queue.visit.patient.user.name}
-		</p>
+	<div class="max-w-2xl space-y-4">
+		<div class="rounded-xl border bg-white p-5 shadow-sm">
+			<p class="font-medium text-gray-800">{queue.queue_number} &middot; {queue.visit.patient.user.name}</p>
+			<p class="mt-1 text-sm text-gray-500">Keluhan: {queue.visit.complaint}</p>
+		</div>
+
+		<div class="rounded-xl border bg-white p-5 shadow-sm">
+			<h2 class="mb-2 text-sm font-semibold text-gray-700">Riwayat Medis Pasien</h2>
+			{#if history.length === 0}
+				<p class="text-sm text-gray-500">Belum ada riwayat medis.</p>
+			{:else}
+				<div class="space-y-3">
+					{#each history as r}
+						<div class="rounded-lg bg-gray-50 p-3 text-sm">
+							<p class="text-xs text-gray-400">
+								{new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+								&middot; {r.visit.polyclinic.name}
+							</p>
+							<p class="font-medium text-gray-800">{r.diagnosis}</p>
+							<p class="text-gray-600">{r.examination_result}</p>
+							{#if r.prescription}
+								<p class="mt-1 text-xs text-gray-500">
+									Resep: {r.prescription.items.map((i) => i.medicine.name).join(', ')}
+								</p>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
 
 		{#if queue.status === 'menunggu'}
-			<button
-				onclick={panggil}
-				disabled={working}
-				class="mt-3 rounded-lg bg-teal-600 px-4 py-2 text-sm text-white hover:bg-teal-700 disabled:opacity-50"
-			>
-				{working ? 'Memproses...' : 'Panggil & Mulai Periksa'}
-			</button>
-		{:else}
-			<form onsubmit={simpan} class="mt-4 space-y-3">
+			<div class="rounded-xl border bg-white p-5 text-sm text-gray-600 shadow-sm">
+				Menunggu pasien dipanggil oleh petugas.
+				<button onclick={loadQueue} class="ml-2 text-teal-700 hover:underline">Muat ulang</button>
+			</div>
+		{:else if queue.status === 'dipanggil'}
+			<div class="rounded-xl border bg-white p-5 shadow-sm">
+				<p class="mb-3 text-sm text-gray-600">Pasien sudah dipanggil petugas ke ruang periksa.</p>
+				<button
+					onclick={mulaiPeriksa}
+					disabled={working}
+					class="rounded-lg bg-teal-600 px-4 py-2 text-sm text-white hover:bg-teal-700 disabled:opacity-50"
+				>
+					{working ? 'Memproses...' : 'Mulai Periksa'}
+				</button>
+				{#if error}<p class="mt-2 text-sm text-red-600">{error}</p>{/if}
+			</div>
+		{:else if queue.status === 'diproses'}
+			<form onsubmit={simpan} class="space-y-3 rounded-xl border bg-white p-5 shadow-sm">
 				<div>
 					<label class="mb-1 block text-sm" for="examination_result">Hasil Pemeriksaan</label>
 					<textarea id="examination_result" bind:value={form.examination_result} required rows="2" class="w-full rounded-lg border px-3 py-2"></textarea>
@@ -147,6 +190,10 @@
 					{working ? 'Menyimpan...' : 'Simpan Rekam Medis'}
 				</button>
 			</form>
+		{:else}
+			<div class="rounded-xl border bg-white p-5 text-sm text-gray-600 shadow-sm">
+				Pemeriksaan untuk antrian ini sudah selesai.
+			</div>
 		{/if}
 	</div>
 {/if}
