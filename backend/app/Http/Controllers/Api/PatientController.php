@@ -28,4 +28,24 @@ class PatientController extends Controller
         if (! $patient) return response()->json(['message' => 'Pasien tidak ditemukan'], 404);
         return response()->json(['data' => $patient]);
     }
+
+    public function update(Request $request, $id)
+    {
+        $patient = Patient::find($id);
+        if (! $patient) return response()->json(['message' => 'Pasien tidak ditemukan'], 404);
+
+        $user = $request->user();
+        if ($user->role === 'pasien' && (int)$user->patient?->id !== (int)$patient->id) {
+            return response()->json(['message' => 'Anda tidak berwenang mengubah data ini'], 403);
+        }
+
+        $validated = $request->validate([
+            'phone'   => 'sometimes|required|string|max:20',
+            'address' => 'sometimes|required|string|max:1000',
+        ]);
+
+        $patient->update($validated);
+
+        return response()->json(['message' => 'Profil berhasil diperbarui', 'data' => $patient->load('user')]);
+    }
 }

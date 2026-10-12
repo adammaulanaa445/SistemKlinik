@@ -64,7 +64,7 @@ class BillingService
     {
         $today = now();
 
-        $count = Payment::whereDate('created_at', $today->toDateString())->count() + 1;
+        $count = Payment::whereDate('created_at', $today->toDateString())->lockForUpdate()->count() + 1;
 
         return 'INV-' . $today->format('Ymd') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
     }

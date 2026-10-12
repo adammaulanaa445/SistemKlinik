@@ -13,10 +13,18 @@ use Illuminate\Validation\Rule;
 
 class VisitController extends Controller
 {
-    // POST /api/visits — pasien mendaftar kunjungan
+    // POST /api/visits — pasien mendaftar kunjungan (petugas/admin bisa pakai patient_id)
     public function store(Request $request)
     {
         $patient = $request->user()->patient;
+
+        // Petugas/admin can create visit on behalf of a patient via patient_id
+        if ($request->filled('patient_id') && in_array($request->user()->role, ['petugas', 'admin'])) {
+            $patient = \App\Models\Patient::with('user')->find($request->patient_id);
+            if (! $patient) {
+                return response()->json(['message' => 'Pasien tidak ditemukan'], 404);
+            }
+        }
 
         if (! $patient) {
             return response()->json([
@@ -28,6 +36,7 @@ class VisitController extends Controller
         $needsProfile = $this->profileIncomplete($patient);
 
         $rules = [
+            'patient_id'         => 'nullable|exists:patients,id',
             'doctor_id'          => 'required|exists:doctors,id',
             'doctor_schedule_id' => 'nullable|exists:doctor_schedules,id',
             'complaint'          => 'required|string',
@@ -52,6 +61,15 @@ class VisitController extends Controller
         }
 
         $doctor = Doctor::with('polyclinic')->findOrFail($request->doctor_id);
+
+        if ($request->filled('doctor_schedule_id')) {
+            $schedule = \App\Models\DoctorSchedule::find($request->doctor_schedule_id);
+            if (! $schedule || $schedule->doctor_id != $doctor->id) {
+                return response()->json([
+                    'message' => 'Jadwal tidak sesuai dengan dokter yang dipilih',
+                ], 422);
+            }
+        }
 
         $result = DB::transaction(function () use ($request, $patient, $doctor, $needsProfile) {
             if ($needsProfile) {
@@ -104,7 +122,7 @@ class VisitController extends Controller
         $countToday = Queue::whereHas('visit', function ($query) use ($polyclinic, $today) {
             $query->where('polyclinic_id', $polyclinic->id)
                   ->whereDate('visit_date', $today);
-        })->count();
+        })->lockForUpdate()->count();
 
         return $polyclinic->queue_code . '-' . str_pad($countToday + 1, 3, '0', STR_PAD_LEFT);
     }

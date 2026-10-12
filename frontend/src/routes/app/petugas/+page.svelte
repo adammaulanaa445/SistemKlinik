@@ -60,7 +60,35 @@
 </script>
 
 <h1 class="mb-1 text-xl font-bold text-gray-800">Selamat datang, {auth.user?.name}</h1>
-<p class="mb-6 text-sm text-gray-500">Pantau antrian, panggil pasien, dan kelola pembayaran.</p>
+<p class="mb-4 text-sm text-gray-500">Pantau antrian, panggil pasien, dan kelola pembayaran.</p>
+
+<div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+	<div class="rounded-xl border bg-white p-4 shadow-sm">
+		<p class="text-xs font-medium text-gray-500">Antrian Hari Ini</p>
+		<p class="mt-1 text-2xl font-bold text-slate-800">{queues.length}</p>
+		<p class="text-xs text-gray-400">Total</p>
+	</div>
+	<div class="rounded-xl border bg-white p-4 shadow-sm">
+		<p class="text-xs font-medium text-gray-500">Menunggu Dipanggil</p>
+		<p class="mt-1 text-2xl font-bold text-amber-600">{queues.filter((q) => q.status === 'menunggu').length}</p>
+		<p class="text-xs text-gray-400">Perlu dipanggil</p>
+	</div>
+	<div class="rounded-xl border bg-white p-4 shadow-sm ring-1 {payments.length > 0 ? 'ring-red-200 bg-red-50/40' : 'ring-slate-100'}">
+		<p class="text-xs font-medium text-gray-500">Belum Lunas</p>
+		<p class="mt-1 text-2xl font-bold {payments.length > 0 ? 'text-red-600' : 'text-slate-400'}">{payments.length}</p>
+		<p class="text-xs text-gray-400">Tagihan</p>
+	</div>
+</div>
+
+{#if payments.length > 0 && activeTab !== 'pembayaran'}
+	<div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+		Ada <span class="font-bold">{payments.length}</span> pembayaran belum lunas — buka tab
+		<button onclick={() => (activeTab = 'pembayaran')} class="font-semibold underline hover:text-amber-900"
+			>Pembayaran Belum Lunas</button
+		>
+		untuk mencatat pembayaran.
+	</div>
+{/if}
 
 {#if loading}
 	<p class="text-sm text-gray-500">Memuat...</p>
@@ -75,9 +103,14 @@
 			</button>
 			<button
 				onclick={() => (activeTab = 'pembayaran')}
-				class="px-4 py-2 text-sm {activeTab === 'pembayaran' ? 'border-b-2 border-teal-600 font-medium text-teal-700' : 'text-gray-500'}"
+				class="inline-flex items-center gap-1.5 px-4 py-2 text-sm {activeTab === 'pembayaran' ? 'border-b-2 border-teal-600 font-medium text-teal-700' : 'text-gray-500'}"
 			>
 				Pembayaran Belum Lunas
+				{#if payments.length > 0}<span
+						class="rounded-full px-1.5 py-0.5 text-xs font-bold leading-none {activeTab === 'pembayaran'
+							? 'bg-red-100 text-red-700 ring-1 ring-red-200'
+							: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200'}">{payments.length}</span
+					>{/if}
 			</button>
 		</div>
 		<button onclick={loadAll} class="text-sm text-teal-700 hover:underline">Muat ulang</button>

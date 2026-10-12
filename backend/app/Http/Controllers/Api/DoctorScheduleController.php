@@ -10,6 +10,36 @@ use Illuminate\Support\Facades\Validator;
 
 class DoctorScheduleController extends Controller
 {
+    // GET /api/schedules — daftar semua jadwal (admin)
+    public function index(Request $request)
+    {
+        $query = DoctorSchedule::with(['doctor.user', 'polyclinic'])->orderBy('doctor_id')->orderBy('day')->orderBy('start_time');
+        if ($request->filled('doctor_id')) {
+            $query->where('doctor_id', $request->doctor_id);
+        }
+        if ($request->filled('polyclinic_id')) {
+            $query->where('polyclinic_id', $request->polyclinic_id);
+        }
+        return response()->json(['data' => $query->get()]);
+    }
+
+    // GET /api/schedules/today — jadwal yang bertugas hari ini (public, tanpa auth)
+    public function today()
+    {
+        $dayMap = [0 => 'minggu', 1 => 'senin', 2 => 'selasa', 3 => 'rabu', 4 => 'kamis', 5 => 'jumat', 6 => 'sabtu'];
+        $today = $dayMap[(int) now()->dayOfWeek];
+        $items = DoctorSchedule::with(['doctor.user', 'polyclinic'])
+            ->where('day', $today)
+            ->orderBy('start_time')
+            ->get();
+        return response()->json([
+            'day' => $today,
+            'count' => $items->count(),
+            'doctors_count' => $items->pluck('doctor_id')->unique()->count(),
+            'data' => $items,
+        ]);
+    }
+
     // POST /api/schedules — tambah jadwal praktik (admin)
     public function store(Request $request)
     {

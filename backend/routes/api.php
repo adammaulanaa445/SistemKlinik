@@ -26,6 +26,7 @@ Route::get('/polyclinics/{id}', [PolyclinicController::class, 'show']);
 
 Route::get('/doctors', [DoctorController::class, 'index']);
 Route::get('/doctors/{id}', [DoctorController::class, 'show']);
+Route::get('/schedules/today', [DoctorScheduleController::class, 'today']);
 
 
 //routes proteksi (harus login)
@@ -37,9 +38,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/visits/my', [VisitController::class, 'myVisits']);
     Route::get('/visits/{id}/queue', [VisitController::class, 'queueStatus']);
 
-Route::middleware('role:dokter,petugas,admin')->group(function () {
-    Route::get('/queues/today', [QueueController::class, 'today']);
-    Route::patch('/queues/{id}/call', [QueueController::class, 'call']);
+    Route::patch('/patients/{id}', [PatientController::class, 'update']);
+
+    Route::middleware('role:dokter,petugas,admin')->group(function () {
+        Route::get('/queues/today', [QueueController::class, 'today']);
+        Route::patch('/queues/{id}/call', [QueueController::class, 'call']);
     });
 
     Route::patch('/queues/{id}/start', [QueueController::class, 'start'])
@@ -56,20 +59,23 @@ Route::middleware('role:dokter,petugas,admin')->group(function () {
     Route::patch('/medicines/{id}/stock', [MedicineController::class, 'updateStock'])
         ->middleware('role:farmasi,admin');
 
-Route::middleware('role:farmasi,admin')->group(function () {
-    Route::get('/prescriptions', [PrescriptionController::class, 'index']);
-    Route::get('/prescriptions/{id}', [PrescriptionController::class, 'show']);
-    Route::patch('/prescriptions/{id}/process', [PrescriptionController::class, 'process']);
-    Route::patch('/prescriptions/{id}/hold', [PrescriptionController::class, 'hold']);
-    Route::patch('/prescriptions/{id}/complete', [PrescriptionController::class, 'complete']);
+    Route::get('/patients', [PatientController::class, 'index'])
+        ->middleware('role:dokter,petugas,admin');
+    Route::get('/patients/{id}', [PatientController::class, 'show'])
+        ->middleware('role:dokter,petugas,admin');
+
+    Route::middleware('role:farmasi,admin')->group(function () {
+        Route::get('/prescriptions', [PrescriptionController::class, 'index']);
+        Route::get('/prescriptions/{id}', [PrescriptionController::class, 'show']);
+        Route::patch('/prescriptions/{id}/process', [PrescriptionController::class, 'process']);
+        Route::patch('/prescriptions/{id}/hold', [PrescriptionController::class, 'hold']);
+        Route::patch('/prescriptions/{id}/complete', [PrescriptionController::class, 'complete']);
     });
 
-Route::middleware('role:petugas,admin')->group(function () {
-    Route::get('/payments', [PaymentController::class, 'index']);
-    Route::post('/payments', [PaymentController::class, 'store']);
-    Route::patch('/payments/{id}/pay', [PaymentController::class, 'pay']);
-    Route::get('/patients', [PatientController::class, 'index']);
-    Route::get('/patients/{id}', [PatientController::class, 'show']);
+    Route::middleware('role:petugas,admin')->group(function () {
+        Route::get('/payments', [PaymentController::class, 'index']);
+        Route::post('/payments', [PaymentController::class, 'store']);
+        Route::patch('/payments/{id}/pay', [PaymentController::class, 'pay']);
     });
 
     Route::get('/payments/{id}', [PaymentController::class, 'show'])
@@ -84,6 +90,7 @@ Route::middleware('role:petugas,admin')->group(function () {
         Route::put('/doctors/{id}', [DoctorController::class, 'update']);
         Route::delete('/doctors/{id}', [DoctorController::class, 'destroy']);
 
+        Route::get('/schedules', [DoctorScheduleController::class, 'index']);
         Route::post('/schedules', [DoctorScheduleController::class, 'store']);
         Route::put('/schedules/{id}', [DoctorScheduleController::class, 'update']);
         Route::delete('/schedules/{id}', [DoctorScheduleController::class, 'destroy']);

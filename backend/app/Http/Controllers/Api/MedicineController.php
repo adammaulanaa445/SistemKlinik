@@ -12,7 +12,12 @@ class MedicineController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Medicine::where('status', 'aktif')->orderBy('name');
+        $query = Medicine::orderBy('name');
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        } elseif (!$request->filled('all') && !$request->filled('with_inactive')) {
+            $query->where('status', 'aktif');
+        }
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
