@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'base_url' => env('WA_BASE_URL'),
+        'api_key' => env('WA_API_KEY'),
+        'sender' => env('WA_SENDER_NUMBER'),
+    ],
+
 ];

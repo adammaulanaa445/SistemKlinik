@@ -11,7 +11,8 @@ class Visit extends Model
 
     protected $fillable = [
         'patient_id', 'doctor_id', 'polyclinic_id', 'doctor_schedule_id',
-        'visit_date', 'complaint', 'status',
+        'visit_date', 'appointment_date', 'visit_type', 'appointment_status', 'estimated_start_time',
+        'cancellation_reason', 'complaint', 'status',
     ];
 
     protected function casts(): array

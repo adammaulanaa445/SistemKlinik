@@ -21,6 +21,7 @@
 		pasien: [
 			{ label: 'Dashboard', icon: '🏠', href: '/app/pasien' },
 			{ label: 'Kunjungan', icon: '📝', href: '/app/kunjungan' },
+			{ label: 'Booking', icon: '??', href: '/app/booking' },
 			{ label: 'Antrian', icon: '🔢', href: '/app/antrian' },
 			{ label: 'Riwayat', icon: '🕘', href: '/app/riwayat' },
 			{ label: 'Profil', icon: '👤', href: '/app/profil' }
@@ -28,6 +29,8 @@
 		dokter: [
 			{ label: 'Dashboard', icon: '🏠', href: '/app/dokter', match: ['/app/dokter', '/app/pemeriksaan'] },
 			{ label: 'Antrian', icon: '🔢', href: '/app/dokter/antrian' },
+			{ label: 'Appointment', icon: '??', href: '/app/appointments' },
+			{ label: 'Appointment', icon: '??', href: '/app/appointments' },
 			{ label: 'Pasien', icon: '👥', href: '/app/dokter/pasien' },
 			{ label: 'Rekam Medis', icon: '📋', href: '/app/dokter/rekam-medis' },
 			{ label: 'Jadwal', icon: '📅', href: '/app/dokter/jadwal' }
@@ -50,7 +53,8 @@
 			{ label: 'Kunjungan', icon: '📝', href: '/app/admin/kunjungan' },
 			{ label: 'Pasien', icon: '👥', href: '/app/admin/pasien' },
 			{ label: 'Laporan', icon: '📊', href: '/app/admin/laporan' },
-			{ label: 'Pengguna', icon: '🔑', href: '/app/admin/pengguna' }
+			{ label: 'Pengguna', icon: '🔑', href: '/app/admin/pengguna' },
+			{ label: 'Audit Log', icon: '??', href: '/app/admin/audit-log' },
 		]
 	};
 

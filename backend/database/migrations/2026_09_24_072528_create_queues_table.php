@@ -12,8 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('visit_id')->constrained()->cascadeOnDelete();
             $table->string('queue_number', 10); // contoh: A-012
-            $table->enum('status', ['menunggu', 'dipanggil', 'diproses', 'selesai'])
-                  ->default('menunggu');
+            $table->string('status', 30)->default('menunggu');
             $table->timestamps();
         });
     }

@@ -152,7 +152,19 @@ class PrescriptionController extends Controller
 
         $prescription->update(['status' => 'selesai']);
 
-        app(\App\Services\BillingService::class)->createForVisit($prescription->medicalRecord->visit);
+        $visit = $prescription->medicalRecord->visit;
+        $payment = app(\App\Services\BillingService::class)->createForVisit($visit);
+
+        if ($payment && $visit->patient->insurance_type === 'umum' && empty($payment->invoice_path)) {
+            $path = app(\App\Services\InvoiceService::class)->generateForPayment($payment);
+            $log = app(\App\Services\NotificationService::class)->queueWhatsApp('pasien', $visit->patient->id, 'invoice_created', [
+                'phone' => $visit->patient->phone,
+                'message' => "Invoice {$payment->invoice_number} telah terbit. Total: Rp " . number_format($payment->amount, 0, ',', '.') . ". Unduh: " . url('storage/' . $path),
+            ]);
+            app(\App\Services\NotificationService::class)->sendQueued($log);
+        }
+
+        app(\App\Services\ActivityLogger::class)->log($request ?? request(), 'complete', 'prescription', 'Menyelesaikan resep', $prescription);
 
         return response()->json([
             'message' => 'Obat sudah diserahkan, resep selesai',

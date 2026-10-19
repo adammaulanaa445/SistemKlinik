@@ -41,7 +41,7 @@
 						class="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-[18px] leading-none text-white shadow-sm"
 						aria-hidden="true">♥</span
 					>
-					<span class="text-[18px] font-bold tracking-tight text-teal-700">SistemKlinik</span>
+					<span class="text-[18px] font-bold tracking-tight text-teal-700">KlinikSehat</span>
 				</a>
 
 				<!-- Center Nav -->

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\MedicalRecord;
+use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\Visit;
 use Illuminate\Http\Request;
@@ -17,10 +18,10 @@ class MedicalRecordController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'visit_id'                         => 'required|exists:visits,id',
-            'examination_result'               => 'required|string',
-            'diagnosis'                        => 'required|string',
-            'treatment'                        => 'nullable|string',
-            'notes'                            => 'nullable|string',
+            'examination_result'               => 'required|string|max:5000',
+            'diagnosis'                        => 'required|string|max:1000',
+            'treatment'                        => 'nullable|string|max:5000',
+            'notes'                            => 'nullable|string|max:5000',
             'prescription_items'               => 'nullable|array',
             'prescription_items.*.medicine_id' => 'required|exists:medicines,id',
             'prescription_items.*.quantity'    => 'required|integer|min:1',
@@ -59,10 +60,25 @@ class MedicalRecordController extends Controller
             }
             $visit->update(['status' => 'selesai']);
 
+            $payment = null;
             if (empty($request->prescription_items)) {
-                app(BillingService::class)->createForVisit($visit);
+                $payment = app(BillingService::class)->createForVisit($visit);
             }
-            
+
+            if ($payment) {
+                $visit->load('patient');
+                if ($visit->patient && $visit->patient->insurance_type === 'umum' && empty($payment->invoice_path)) {
+                    $path = app(\App\Services\InvoiceService::class)->generateForPayment($payment);
+                    $log = app(\App\Services\NotificationService::class)->queueWhatsApp('pasien', $visit->patient->id, 'invoice_created', [
+                        'phone' => $visit->patient->phone,
+                        'message' => "Invoice {$payment->invoice_number} telah terbit. Total: Rp " . number_format($payment->amount, 0, ',', '.') . ". Unduh: " . url('storage/' . $path),
+                    ]);
+                    app(\App\Services\NotificationService::class)->sendQueued($log);
+                }
+            }
+
+            app(\App\Services\ActivityLogger::class)->log($request->user(), 'create', 'medical_record', 'Menyimpan rekam medis', $record);
+
             return $record;
         });
         return response()->json(['message' => 'Rekam medis berhasil disimpan','data' => $record->load('prescription.items.medicine')], 201);
@@ -70,6 +86,10 @@ class MedicalRecordController extends Controller
 
     public function history($patientId)
     {
+        if (! Patient::find($patientId)) {
+            return response()->json(['message' => 'Pasien tidak ditemukan'], 404);
+        }
+
         $records = MedicalRecord::with(['visit.doctor.user','visit.polyclinic','prescription.items.medicine'])
             ->whereHas('visit', fn ($q) => $q->where('patient_id', $patientId))
             ->orderByDesc('id')->get();

@@ -10,7 +10,7 @@ class Patient extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'nik', 'gender', 'birth_date', 'phone', 'address',
+        'user_id', 'nik', 'gender', 'birth_date', 'phone', 'address', 'insurance_type', 'bpjs_number',
     ];
 
     protected function casts(): array

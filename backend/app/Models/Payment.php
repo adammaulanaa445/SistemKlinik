@@ -10,7 +10,7 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'visit_id', 'payment_code', 'amount', 'method', 'status', 'paid_at',
+        'visit_id', 'payment_code', 'invoice_number', 'invoice_path', 'amount', 'method', 'status', 'paid_at',
     ];
 
     protected function casts(): array

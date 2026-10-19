@@ -8,7 +8,9 @@
 		email: '',
 		phone: '',
 		password: '',
-		password_confirmation: ''
+		password_confirmation: '',
+		insurance_type: 'umum',
+		bpjs_number: ''
 	});
 
 	let errors = $state({});
@@ -155,6 +157,33 @@
 						</div>
 						{#if errors.phone}<p class="mt-1 text-xs text-red-600">{errors.phone[0]}</p>{/if}
 					</div>
+
+					<!-- Jenis Pembiayaan -->
+					<div>
+						<label class="mb-1.5 block text-sm font-medium text-slate-700" for="insurance_type">Jenis Pembiayaan</label>
+						<select
+							id="insurance_type"
+							bind:value={form.insurance_type}
+							class="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-3 text-sm text-slate-800 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none"
+						>
+							<option value="umum">Umum (Non-BPJS)</option>
+							<option value="bpjs">BPJS</option>
+						</select>
+					</div>
+
+					{#if form.insurance_type === 'bpjs'}
+						<div>
+							<label class="mb-1.5 block text-sm font-medium text-slate-700" for="bpjs_number">Nomor BPJS</label>
+							<input
+								id="bpjs_number"
+								bind:value={form.bpjs_number}
+								required
+								placeholder="Nomor BPJS"
+								class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-3 pl-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none"
+							/>
+							{#if errors.bpjs_number}<p class="mt-1 text-xs text-red-600">{errors.bpjs_number[0]}</p>{/if}
+						</div>
+					{/if}
 
 					<!-- Password -->
 					<div>

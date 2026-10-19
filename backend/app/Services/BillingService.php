@@ -20,10 +20,11 @@ class BillingService
         $bill = $this->buildBill($visit);
 
         return Payment::create([
-            'visit_id'     => $visit->id,
-            'payment_code' => $this->generatePaymentCode(),
-            'amount'       => $bill['total'],
-            'status'       => 'belum_bayar',
+            'visit_id'       => $visit->id,
+            'payment_code'   => $this->generatePaymentCode(),
+            'invoice_number' => $this->generateInvoiceNumber(),
+            'amount'         => $bill['total'],
+            'status'         => 'belum_bayar',
         ]);
     }
 
@@ -67,5 +68,12 @@ class BillingService
         $count = Payment::whereDate('created_at', $today->toDateString())->lockForUpdate()->count() + 1;
 
         return 'INV-' . $today->format('Ymd') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function generateInvoiceNumber(): string
+    {
+        $today = now();
+        $count = Payment::whereDate('created_at', $today->toDateString())->lockForUpdate()->count() + 1;
+        return 'INVNO-' . $today->format('Ymd') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 }

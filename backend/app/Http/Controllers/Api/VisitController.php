@@ -39,7 +39,7 @@ class VisitController extends Controller
             'patient_id'         => 'nullable|exists:patients,id',
             'doctor_id'          => 'required|exists:doctors,id',
             'doctor_schedule_id' => 'nullable|exists:doctor_schedules,id',
-            'complaint'          => 'required|string',
+            'complaint'          => 'required|string|max:2000',
         ];
 
         if ($needsProfile) {
@@ -47,7 +47,7 @@ class VisitController extends Controller
                 'nik'        => ['required', 'string', 'size:16', Rule::unique('patients', 'nik')->ignore($patient->id)],
                 'gender'     => 'required|in:L,P',
                 'birth_date' => 'required|date|before:today',
-                'address'    => 'required|string',
+                'address'    => 'required|string|max:1000',
             ];
         }
 
@@ -96,6 +96,8 @@ class VisitController extends Controller
         });
 
         [$visit, $queue] = $result;
+
+        app(\App\Services\ActivityLogger::class)->log($request->user(), 'create', 'visit', 'Mendaftarkan kunjungan', $visit);
 
         return response()->json([
             'message' => 'Pendaftaran kunjungan berhasil',
@@ -150,6 +152,10 @@ class VisitController extends Controller
     public function queueStatus(Request $request, $id)
     {
         $patient = $request->user()->patient;
+
+        if (! $patient) {
+            return response()->json(['message' => 'Kunjungan tidak ditemukan'], 404);
+        }
 
         $visit = Visit::with(['doctor.user', 'polyclinic', 'queue', 'payment'])
             ->where('patient_id', $patient->id)

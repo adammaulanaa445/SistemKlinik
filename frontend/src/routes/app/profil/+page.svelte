@@ -176,6 +176,19 @@
 							<label for="address" class="mb-1 block text-sm font-medium text-slate-700">Alamat</label>
 							<textarea id="address" bind:value={form.address} required rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" placeholder="Alamat lengkap"></textarea>
 						</div>
+						<div>
+							<label for="insurance_type" class="mb-1 block text-sm font-medium text-slate-700">Jenis Pembiayaan</label>
+							<select id="insurance_type" bind:value={form.insurance_type} class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100">
+								<option value="umum">Umum (Non-BPJS)</option>
+								<option value="bpjs">BPJS</option>
+							</select>
+						</div>
+						{#if form.insurance_type === 'bpjs'}
+						<div>
+							<label for="bpjs_number" class="mb-1 block text-sm font-medium text-slate-700">Nomor BPJS</label>
+							<input id="bpjs_number" bind:value={form.bpjs_number} class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" placeholder="Nomor BPJS" />
+						</div>
+						{/if}
 						<div class="flex gap-2">
 							<button type="submit" disabled={saving} class="flex-1 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50">{saving ? 'Menyimpan...' : 'Simpan'}</button>
 							<button type="button" onclick={cancel} class="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Batal</button>

@@ -16,8 +16,7 @@ return new class extends Migration
             $table->foreignId('doctor_schedule_id')->nullable()->constrained()->nullOnDelete();
             $table->date('visit_date');
             $table->text('complaint'); // keluhan pasien
-            $table->enum('status', ['menunggu', 'diperiksa', 'selesai', 'batal'])
-                  ->default('menunggu');
+            $table->string('status', 30)->default('menunggu');
             $table->timestamps();
         });
     }

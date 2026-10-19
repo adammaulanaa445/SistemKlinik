@@ -40,10 +40,11 @@ class PaymentController extends Controller
         $bill = $this->buildBill($visit);
         $payment = DB::transaction(function () use ($visit, $bill) {
             return Payment::create([
-                'visit_id' => $visit->id,
-                'payment_code' => $this->generatePaymentCodeLocked(),
-                'amount' => $bill['total'],
-                'status' => 'belum_bayar',
+                'visit_id'       => $visit->id,
+                'payment_code'   => $this->generatePaymentCodeLocked(),
+                'invoice_number' => $this->generateInvoiceNumberLocked(),
+                'amount'         => $bill['total'],
+                'status'         => 'belum_bayar',
             ]);
         });
         return response()->json(['message' => 'Tagihan berhasil dibuat','data' => $payment,'bill' => $bill], 201);
@@ -101,5 +102,12 @@ class PaymentController extends Controller
         $today = now();
         $count = Payment::whereDate('created_at', $today->toDateString())->lockForUpdate()->count() + 1;
         return 'INV-' . $today->format('Ymd') . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function generateInvoiceNumberLocked(): string
+    {
+        $today = now();
+        $count = Payment::whereDate('created_at', $today->toDateString())->lockForUpdate()->count() + 1;
+        return 'INVNO-' . $today->format('Ymd') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 }

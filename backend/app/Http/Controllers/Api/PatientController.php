@@ -10,6 +10,8 @@ class PatientController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate(['search' => 'nullable|string|max:100']);
+
         $query = Patient::with('user')->orderBy('id', 'desc');
         if ($request->filled('search')) {
             $search = $request->search;
@@ -40,8 +42,10 @@ class PatientController extends Controller
         }
 
         $validated = $request->validate([
-            'phone'   => 'sometimes|required|string|max:20',
-            'address' => 'sometimes|required|string|max:1000',
+            'phone'           => 'sometimes|required|string|max:20',
+            'address'         => 'sometimes|required|string|max:1000',
+            'insurance_type'  => 'sometimes|required|in:bpjs,umum',
+            'bpjs_number'     => 'sometimes|nullable|string|max:30',
         ]);
 
         $patient->update($validated);

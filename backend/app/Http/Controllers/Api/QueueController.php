@@ -50,6 +50,8 @@ class QueueController extends Controller
 
         $queue->update(['status' => 'dipanggil']);
 
+        app(\App\Services\ActivityLogger::class)->log($request->user(), 'call', 'queue', 'Memanggil pasien', $queue);
+
         return response()->json([
             'message' => 'Pasien dipanggil',
             'data'    => $queue->fresh(),
@@ -75,6 +77,8 @@ class QueueController extends Controller
             $queue->update(['status' => 'diproses']);
             $queue->visit->update(['status' => 'diperiksa']);
         });
+
+        app(\App\Services\ActivityLogger::class)->log($request->user(), 'start_exam', 'queue', 'Memulai pemeriksaan', $queue);
 
         return response()->json([
             'message' => 'Pemeriksaan dimulai',

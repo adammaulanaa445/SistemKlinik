@@ -14,12 +14,14 @@ use App\Http\Controllers\Api\DoctorScheduleController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\AuditLogController;
 use Illuminate\Support\Facades\Route;
 
 
 //routes publik
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 Route::get('/polyclinics', [PolyclinicController::class, 'index']);
 Route::get('/polyclinics/{id}', [PolyclinicController::class, 'show']);
@@ -37,6 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/visits', [VisitController::class, 'store']);
     Route::get('/visits/my', [VisitController::class, 'myVisits']);
     Route::get('/visits/{id}/queue', [VisitController::class, 'queueStatus']);
+
+    Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
+    Route::post('/appointments', [AppointmentController::class, 'store']);
+    Route::get('/appointments/my', [AppointmentController::class, 'myAppointments']);
+    Route::get('/appointments/today', [AppointmentController::class, 'today']);
+    Route::patch('/appointments/{id}/check-in', [AppointmentController::class, 'checkIn']);
+    Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
 
     Route::patch('/patients/{id}', [PatientController::class, 'update']);
 
@@ -96,6 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/schedules/{id}', [DoctorScheduleController::class, 'destroy']);
 
         Route::apiResource('users', UserController::class)->except(['show']);
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
     });
 
     Route::middleware('role:admin,farmasi')->group(function () {

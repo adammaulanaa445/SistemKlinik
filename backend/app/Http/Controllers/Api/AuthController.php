@@ -15,10 +15,12 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'phone'    => 'required|string|max:20',
-            'password' => 'required|string|min:8|confirmed',
+            'name'            => 'required|string|max:255',
+            'email'           => 'required|email|unique:users,email',
+            'phone'           => 'required|string|max:20',
+            'password'        => 'required|string|min:8|confirmed',
+            'insurance_type'  => 'nullable|in:bpjs,umum',
+            'bpjs_number'     => 'nullable|string|max:30',
         ]);
 
         if ($validator->fails()) {
@@ -37,8 +39,10 @@ class AuthController extends Controller
             ]);
 
             Patient::create([
-            'user_id' => $user->id,
-            'phone'   => $request->phone,
+                'user_id'        => $user->id,
+                'phone'          => $request->phone,
+                'insurance_type' => $request->input('insurance_type', 'umum'),
+                'bpjs_number'    => $request->input('bpjs_number'),
             ]);
 
 
